@@ -1,0 +1,109 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+
+  background: #0f1115;
+  color: #111;
+
+  font-size: 17px;
+}
+
+/* contenedor app */
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* títulos */
+
+h1 {
+  font-size: 32px;
+}
+
+h2 {
+  font-size: 26px;
+}
+
+h3 {
+  font-size: 20px;
+}
+
+/* inputs */
+
+input,
+select {
+  background: white;
+  border: 1px solid #d9d9d9;
+  color: #111;
+  font-size: 16px;
+  padding: 12px;
+}
+
+/* tarjetas */
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* botones */
+
+button {
+  font-size: 16px;
+}
+
+/* botón principal */
+
+.btn-primary {
+  background: #00c27a;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+}
+
+.btn-primary:hover {
+  background: #00a868;
+}
+
+/* botón secundario */
+
+.btn-light {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+/* formularios */
+
+label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* scroll moderno */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1115;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 6px;
+}
