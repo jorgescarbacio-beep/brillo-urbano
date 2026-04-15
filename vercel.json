@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+        {
+            "source": "/certificaciones/:path*",
+            "destination": "/certificaciones/:path*"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

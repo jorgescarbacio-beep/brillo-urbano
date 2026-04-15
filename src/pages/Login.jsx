@@ -9,85 +9,62 @@ export default function Login() {
     const [error, setError] = useState("");
 
     const handleLogin = async (e) => {
-
         e.preventDefault();
         setError("");
 
         try {
-
             await signInWithEmailAndPassword(
                 auth,
                 email.trim(),
                 password
             );
-
+            // El cambio de estado lo detecta App.jsx automáticamente
         } catch (err) {
-
             setError("Usuario o contraseña incorrectos");
-
         }
-
     };
 
     return (
-
         <div style={page}>
-
             <div style={card}>
-
                 <div style={brand}>
-
                     <img
                         src="/logo-brillo-urbano.png"
                         alt="Brillo Urbano"
                         style={logo}
                     />
-
                     <h1 style={title}>
                         BRILLO URBANO
                     </h1>
-
                     <p style={subtitle}>
                         Panel de gestión
                     </p>
-
                 </div>
 
                 <form
                     onSubmit={handleLogin}
                     style={form}
                 >
-
                     <label style={label}>
-
                         Email
-
                         <input
                             type="email"
                             placeholder="tu@email.com"
                             value={email}
-                            onChange={(e) =>
-                                setEmail(e.target.value)
-                            }
+                            onChange={(e) => setEmail(e.target.value)}
                             style={input}
                         />
-
                     </label>
 
                     <label style={label}>
-
                         Contraseña
-
                         <input
                             type="password"
                             placeholder="********"
                             value={password}
-                            onChange={(e) =>
-                                setPassword(e.target.value)
-                            }
+                            onChange={(e) => setPassword(e.target.value)}
                             style={input}
                         />
-
                     </label>
 
                     <button
@@ -98,13 +75,10 @@ export default function Login() {
                     </button>
 
                     {error && (
-
                         <div style={errorBox}>
                             {error}
                         </div>
-
                     )}
-
                 </form>
 
                 <div style={footer}>
@@ -112,11 +86,8 @@ export default function Login() {
                     <br />
                     IG: brillourbano.limpieza
                 </div>
-
             </div>
-
         </div>
-
     );
 }
 

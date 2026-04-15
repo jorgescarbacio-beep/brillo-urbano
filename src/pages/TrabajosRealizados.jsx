@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase/config";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { listenClientes } from "../services/clientesService";
 
 export default function TrabajosRealizados({ onBack }) {
@@ -18,7 +18,9 @@ export default function TrabajosRealizados({ onBack }) {
                 return {
                     ...normalizar(s),
                     cliente: s.nombreCliente || s.cliente || s.nombre || clienteObj?.nombre || "Sin cliente",
-                    direccion: s.direccion || clienteObj?.direccion || "Dirección no registrada"
+                    direccion: s.direccion || clienteObj?.direccion || "Dirección no registrada",
+                    telefono: clienteObj?.telefono || s.telefono || "",
+                    cobrado: s.cobrado || false
                 };
             });
             setLista(normalizados.sort((a, b) => b.fecha - a.fecha));
@@ -30,6 +32,22 @@ export default function TrabajosRealizados({ onBack }) {
         const unsub = listenClientes(setClientes);
         return () => unsub();
     }, []);
+
+    const handleToggleCobrado = async (id, estadoActual) => {
+        try {
+            const docRef = doc(db, "servicios", id);
+            await updateDoc(docRef, { cobrado: !estadoActual });
+        } catch (error) {
+            console.error("Error al actualizar estado:", error);
+        }
+    };
+
+    const handleReclamarPago = (s) => {
+        const fechaTxt = formatearFecha(s.fecha);
+        const mensaje = `Hola! \uD83D\uDC4B Te escribimos de Brillo Urbano. No te olvides de transferirnos lo del servicio de *${s.serviciosTexto}* que hicimos el día *${fechaTxt}*. Culaquier cosa hablamos! Muchas gracias \uD83D\uDE0A\u2728`;
+        const url = `https://wa.me/${s.telefono}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, "_blank");
+    };
 
     const agrupados = agruparPorMes(lista);
 
@@ -44,64 +62,132 @@ export default function TrabajosRealizados({ onBack }) {
 
             {Object.keys(agrupados).map((mes) => {
                 const abierto = mesAbierto === mes;
+                const trabajosMes = agrupados[mes];
+
+                const pagados = trabajosMes.filter(t => t.cobrado);
+                const pendientes = trabajosMes.filter(t => !t.cobrado);
+                const totalPagado = pagados.reduce((acc, t) => acc + t.importe, 0);
+                const totalPendiente = pendientes.reduce((acc, t) => acc + t.importe, 0);
+
                 return (
                     <div key={mes} style={styles.bloqueMes}>
                         <div style={styles.mesHeader} onClick={() => setMesAbierto(abierto ? null : mes)}>
                             <span style={{ fontSize: '1.2rem' }}>{mes}</span>
-                            <span style={styles.badge}>{agrupados[mes].length} trabajos</span>
+                            <span style={styles.badge}>{trabajosMes.length} trabajos</span>
                         </div>
 
-                        {abierto && agrupados[mes].map(s => (
-                            <div key={s.id} style={styles.card}>
-                                <div style={styles.cardHeader}>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={styles.clienteName}>{s.cliente}</div>
-                                        <div style={styles.direccionText}>📍 {s.direccion}</div>
+                        {abierto && (
+                            <>
+                                <div style={styles.resumenContainer}>
+                                    <div style={styles.columnaResumen}>
+                                        <h4 style={{ ...styles.resumenTitle, color: "#00c27a" }}>✅ COBRADOS</h4>
+                                        <div style={styles.listaResumen}>
+                                            {pagados.map(p => (
+                                                <div key={p.id} style={styles.itemResumen}>
+                                                    <span>{p.cliente}</span>
+                                                    <span style={{ fontWeight: 'bold' }}>${formatearNumero(p.importe)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div style={styles.totalResumen}>
+                                            <span>TOTAL</span>
+                                            <span>$ {formatearNumero(totalPagado)}</span>
+                                        </div>
                                     </div>
-                                    <div style={styles.fechaBadge}>{formatearFecha(s.fecha)}</div>
+
+                                    <div style={styles.columnaResumen}>
+                                        <h4 style={{ ...styles.resumenTitle, color: "#ffaa00" }}>⏳ PENDIENTES</h4>
+                                        <div style={styles.listaResumen}>
+                                            {pendientes.map(p => (
+                                                <div key={p.id} style={styles.itemResumen}>
+                                                    <span>{p.cliente}</span>
+                                                    <span style={{ fontWeight: 'bold' }}>${formatearNumero(p.importe)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div style={styles.totalResumen}>
+                                            <span>TOTAL</span>
+                                            <span>$ {formatearNumero(totalPendiente)}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div style={styles.servicioBox}>
-                                    <div style={styles.servicioTitle}>🛠️ {s.serviciosTexto}</div>
-                                    {s.notas && <div style={styles.notasText}>"{s.notas}"</div>}
-                                </div>
-
-                                <div style={styles.finanzasGrid}>
-                                    <div style={styles.finanzaItem}>
-                                        <span style={styles.finanzaLabel}>Cobrado</span>
-                                        <span style={styles.valCobrado}>$ {formatearNumero(s.importe)}</span>
-                                    </div>
-                                    <div style={styles.finanzaItem}>
-                                        <span style={styles.finanzaLabel}>Costos</span>
-                                        <span style={styles.valCosto}>$ {formatearNumero(s.costoOperario)}</span>
-                                    </div>
-                                    <div style={styles.finanzaItem}>
-                                        <span style={styles.finanzaLabel}>Ganancia</span>
-                                        <span style={styles.valGanancia}>$ {formatearNumero(s.importe - s.costoOperario)}</span>
-                                    </div>
-                                </div>
-
-                                {s.operariosDetalle?.length > 0 && (
-                                    <div style={styles.detalleOperarios}>
-                                        {s.operariosDetalle.map((op, i) => (
-                                            <div key={i} style={styles.opTag}>
-                                                <span style={{ color: '#ffaa00' }}>👷</span>
-                                                <span style={{ color: '#fff', fontWeight: '600' }}> {op.nombre}:</span>
-                                                <span style={{ color: '#00e0ff' }}> ${formatearNumero(op.costo)}</span>
+                                {trabajosMes.map(s => (
+                                    <div key={s.id} style={styles.card}>
+                                        <div style={styles.cardHeader}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={styles.clienteName}>{s.cliente}</div>
+                                                <div style={styles.direccionText}>📍 {s.direccion}</div>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            <div style={styles.fechaBadge}>{formatearFecha(s.fecha)}</div>
+                                        </div>
 
-                                {s.fotos?.length > 0 && (
-                                    <div style={styles.galeria}>
-                                        {s.fotos.map((f, i) => (
-                                            <img key={i} src={f} style={styles.fotoThumb} alt="Trabajo" />
-                                        ))}
+                                        <div style={styles.servicioBox}>
+                                            <div style={styles.servicioTitle}>🛠️ {s.serviciosTexto}</div>
+                                            {s.notas && <div style={styles.notasText}>"{s.notas}"</div>}
+                                        </div>
+
+                                        <div style={styles.actionsRow}>
+                                            <button
+                                                onClick={() => handleToggleCobrado(s.id, s.cobrado)}
+                                                style={{
+                                                    ...styles.statusBtn,
+                                                    background: s.cobrado ? "#00c27a" : "#ffaa0022",
+                                                    color: s.cobrado ? "#000" : "#ffaa00",
+                                                    border: s.cobrado ? "none" : "1px solid #ffaa00"
+                                                }}
+                                            >
+                                                {s.cobrado ? "✅ COBRADO" : "⏳ PENDIENTE"}
+                                            </button>
+
+                                            {!s.cobrado && (
+                                                <button
+                                                    onClick={() => handleReclamarPago(s)}
+                                                    style={styles.reclamarBtn}
+                                                >
+                                                    📲 Reclamar Pago
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div style={styles.finanzasGrid}>
+                                            <div style={styles.finanzaItem}>
+                                                <span style={styles.finanzaLabel}>Cobrado</span>
+                                                <span style={styles.valCobrado}>$ {formatearNumero(s.importe)}</span>
+                                            </div>
+                                            <div style={styles.finanzaItem}>
+                                                <span style={styles.finanzaLabel}>Costos</span>
+                                                <span style={styles.valCosto}>$ {formatearNumero(s.costoOperario)}</span>
+                                            </div>
+                                            <div style={styles.finanzaItem}>
+                                                <span style={styles.finanzaLabel}>Ganancia</span>
+                                                <span style={styles.valGanancia}>$ {formatearNumero(s.importe - s.costoOperario)}</span>
+                                            </div>
+                                        </div>
+
+                                        {s.operariosDetalle?.length > 0 && (
+                                            <div style={styles.detalleOperarios}>
+                                                {s.operariosDetalle.map((op, i) => (
+                                                    <div key={i} style={styles.opTag}>
+                                                        <span style={{ color: '#ffaa00' }}>👷</span>
+                                                        <span style={{ color: '#fff', fontWeight: '600' }}> {op.nombre}:</span>
+                                                        <span style={{ color: '#00e0ff' }}> ${formatearNumero(op.costo)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {s.fotos?.length > 0 && (
+                                            <div style={styles.galeria}>
+                                                {s.fotos.map((f, i) => (
+                                                    <img key={i} src={f} style={styles.fotoThumb} alt="Trabajo" />
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                ))}
+                            </>
+                        )}
                     </div>
                 );
             })}
@@ -168,6 +254,22 @@ const styles = {
         fontWeight: "800", textTransform: "capitalize", border: "1px solid #262b33"
     },
     badge: { background: "#00c27a22", color: "#00c27a", padding: "6px 12px", borderRadius: "30px", fontSize: "13px", fontWeight: "bold" },
+    resumenContainer: {
+        display: "flex", gap: "15px", margin: "15px 0 25px 0", flexWrap: "wrap"
+    },
+    columnaResumen: {
+        flex: 1, minWidth: "280px", background: "#161a21", borderRadius: "15px", padding: "15px", border: "1px solid #262b33"
+    },
+    resumenTitle: { fontSize: "14px", fontWeight: "800", marginBottom: "15px", textAlign: "center", letterSpacing: "1px" },
+    listaResumen: { maxHeight: "150px", overflowY: "auto", marginBottom: "15px" },
+    itemResumen: {
+        display: "flex", justifyContent: "space-between", color: "#ccc", fontSize: "13px",
+        padding: "8px 0", borderBottom: "1px solid #262b33"
+    },
+    totalResumen: {
+        display: "flex", justifyContent: "space-between", color: "#fff",
+        fontWeight: "800", fontSize: "16px", paddingTop: "10px", borderTop: "2px solid #262b33"
+    },
     card: {
         background: "#161a21", borderRadius: "20px", padding: "20px",
         border: "1px solid #262b33", marginTop: "12px", boxShadow: "0 6px 20px rgba(0,0,0,0.3)"
@@ -176,9 +278,16 @@ const styles = {
     clienteName: { color: "#00c27a", fontSize: "22px", fontWeight: "800", lineHeight: "1.2" },
     direccionText: { color: "#aaa", fontSize: "15px", marginTop: "6px", fontWeight: "500" },
     fechaBadge: { color: "#eee", fontSize: "13px", background: "#333", padding: "6px 12px", borderRadius: "8px", alignSelf: "flex-start" },
-    servicioBox: { background: "#0a0c10", padding: "15px", borderRadius: "12px", marginBottom: "20px", borderLeft: "4px solid #00c27a" },
+    servicioBox: { background: "#0a0c10", padding: "15px", borderRadius: "12px", marginBottom: "15px", borderLeft: "4px solid #00c27a" },
     servicioTitle: { color: "#fff", fontWeight: "700", fontSize: "17px" },
     notasText: { color: "#888", fontSize: "15px", fontStyle: "italic", marginTop: "8px", display: "block" },
+    actionsRow: { display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" },
+    statusBtn: { padding: "10px 18px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold", cursor: "pointer", transition: "all 0.3s ease" },
+    reclamarBtn: {
+        background: "#25d36622", color: "#25d366", border: "1px solid #25d366",
+        padding: "10px 18px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold",
+        cursor: "pointer", display: "flex", alignItems: "center", gap: "5px"
+    },
     finanzasGrid: {
         display: "flex", justifyContent: "space-between", gap: "10px",
         padding: "20px 0", borderTop: "1px solid #262b33", flexWrap: "wrap"

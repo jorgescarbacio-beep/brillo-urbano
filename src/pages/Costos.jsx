@@ -35,6 +35,8 @@ export default function Costos({ onBack }) {
     const [editData, setEditData] = useState({});
     const [editComprobante, setEditComprobante] = useState(null);
 
+    const [mesAbierto, setMesAbierto] = useState(null);
+
     useEffect(() => {
 
         const unsub = onSnapshot(collection(db, "gastos"), (snap) => {
@@ -118,7 +120,6 @@ export default function Costos({ onBack }) {
     };
 
     const iniciarEdicion = (g) => {
-
         setEditando(g.id);
 
         setEditData({
@@ -130,6 +131,8 @@ export default function Costos({ onBack }) {
             comprobanteURL: g.comprobanteURL || ""
         });
 
+        // Esta línea hace que suba al principio suavemente
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const guardarEdicion = async () => {
@@ -154,6 +157,35 @@ export default function Costos({ onBack }) {
 
     };
 
+    // 🔥 ordenar por fecha
+    const gastosOrdenados = useMemo(() => {
+        return [...gastos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    }, [gastos]);
+
+    // 🔥 agrupar por mes
+    const gastosPorMes = useMemo(() => {
+
+        const grupos = {};
+
+        gastosOrdenados.forEach(g => {
+
+            const fecha = new Date(g.fecha);
+
+            const key = fecha.toLocaleString("es-AR", {
+                month: "long",
+                year: "numeric"
+            });
+
+            if (!grupos[key]) grupos[key] = [];
+
+            grupos[key].push(g);
+
+        });
+
+        return grupos;
+
+    }, [gastosOrdenados]);
+
     const totalGastos = useMemo(() => {
         return gastos.reduce((acc, g) => acc + Number(g.monto || 0), 0);
     }, [gastos]);
@@ -171,11 +203,8 @@ export default function Costos({ onBack }) {
     }, [gastos]);
 
     const saldo = useMemo(() => {
-
         const diferencia = totalJorge - totalSole;
-
         return diferencia / 2;
-
     }, [totalJorge, totalSole]);
 
     return (
@@ -196,6 +225,125 @@ export default function Costos({ onBack }) {
                 </div>
             )}
 
+            {/* --- BLOQUE DE CARGA DE NUEVOS GASTOS --- */}
+            {/* --- BLOQUE DE CARGA / EDICIÓN MEJORADO --- */}
+            <div style={{
+                background: "#1e1e1e",
+                padding: "20px",
+                borderRadius: "16px",
+                marginTop: "20px",
+                marginBottom: "20px",
+                border: editando ? "2px solid #1890ff" : "1px solid #333", // Resalta si está editando
+                boxShadow: "0 4px 15px rgba(0,0,0,0.3)"
+            }}>
+                <h3 style={{ color: "white", marginTop: 0, marginBottom: 15 }}>
+                    {editando ? "📝 Editando Gasto" : "➕ Nuevo Gasto"}
+                </h3>
+
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px"
+                }}>
+                    {/* Concepto y Monto - Se adaptan solos */}
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                        <div style={{ flex: "1 1 200px" }}>
+                            <label style={labelStyle}>Concepto</label>
+                            <input
+                                type="text"
+                                placeholder="Ej: Supermercado"
+                                value={editando ? editData.concepto : concepto}
+                                onChange={(e) => editando ? setEditData({ ...editData, concepto: e.target.value }) : setConcepto(e.target.value)}
+                                style={inputStyle}
+                            />
+                        </div>
+                        <div style={{ flex: "1 1 120px" }}>
+                            <label style={labelStyle}>Monto ($)</label>
+                            <input
+                                type="number"
+                                placeholder="0.00"
+                                value={editando ? editData.monto : monto}
+                                onChange={(e) => editando ? setEditData({ ...editData, monto: e.target.value }) : setMonto(e.target.value)}
+                                style={inputStyle}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Fecha, Pago y Método */}
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                        <div style={{ flex: "1 1 140px" }}>
+                            <label style={labelStyle}>Fecha</label>
+                            <input
+                                type="date"
+                                value={editando ? editData.fecha : fecha}
+                                onChange={(e) => editando ? setEditData({ ...editData, fecha: e.target.value }) : setFecha(e.target.value)}
+                                style={inputStyle}
+                            />
+                        </div>
+                        <div style={{ flex: "1 1 100px" }}>
+                            <label style={labelStyle}>Pagó</label>
+                            <select
+                                value={editando ? editData.pagoPor : pagoPor}
+                                onChange={(e) => editando ? setEditData({ ...editData, pagoPor: e.target.value }) : setPagoPor(e.target.value)}
+                                style={inputStyle}
+                            >
+                                <option value="Jorge">Jorge</option>
+                                <option value="Sole">Sole</option>
+                            </select>
+                        </div>
+                        <div style={{ flex: "1 1 120px" }}>
+                            <label style={labelStyle}>Método</label>
+                            <select
+                                value={editando ? editData.metodoPago : metodoPago}
+                                onChange={(e) => editando ? setEditData({ ...editData, metodoPago: e.target.value }) : setMetodoPago(e.target.value)}
+                                style={inputStyle}
+                            >
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Comprobante */}
+                    <div>
+                        <label style={labelStyle}>Comprobante (opcional)</label>
+                        <input
+                            type="file"
+                            onChange={(e) => editando ? setEditComprobante(e.target.files[0]) : setComprobante(e.target.files[0])}
+                            style={{ ...inputStyle, padding: "8px" }}
+                        />
+                    </div>
+
+                    {/* Botones */}
+                    <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                        <button
+                            onClick={editando ? guardarEdicion : agregarGasto}
+                            style={{
+                                ...btnEdit,
+                                background: editando ? "#1890ff" : "#00c27a",
+                                color: editando ? "white" : "black",
+                                flex: 2,
+                                padding: "15px",
+                                fontSize: "16px"
+                            }}
+                        >
+                            {editando ? "Actualizar Gasto" : "Guardar Gasto"}
+                        </button>
+
+                        {editando && (
+                            <button
+                                onClick={() => setEditando(null)}
+                                style={{ ...btnLight, flex: 1 }}
+                            >
+                                Cancelar
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+            {/* --- FIN DEL BLOQUE --- */}
+
             <div style={grid}>
 
                 <Card title="Total gastos">
@@ -213,248 +361,109 @@ export default function Costos({ onBack }) {
                 </Card>
 
                 <Card title="Saldo">
-
                     {saldo > 0 && (
                         <span>Sole le debe $ {Math.abs(saldo).toLocaleString("es-AR")} a Jorge</span>
                     )}
-
                     {saldo < 0 && (
                         <span>Jorge le debe $ {Math.abs(saldo).toLocaleString("es-AR")} a Sole</span>
                     )}
-
                     {saldo === 0 && (
                         <span>Están empatados</span>
                     )}
-
                 </Card>
 
             </div>
 
             <h3 style={{ marginTop: 30, color: "white" }}>
-                Nuevo gasto
-            </h3>
-
-            <form onSubmit={agregarGasto} style={form}>
-
-                <input
-                    placeholder="Concepto"
-                    value={concepto}
-                    onChange={(e) => setConcepto(e.target.value)}
-                    style={input}
-                />
-
-                <input
-                    type="number"
-                    placeholder="Monto"
-                    value={monto}
-                    onChange={(e) => setMonto(e.target.value)}
-                    style={input}
-                />
-
-                <input
-                    type="date"
-                    value={fecha}
-                    onChange={(e) => setFecha(e.target.value)}
-                    style={input}
-                />
-
-                <select
-                    value={pagoPor}
-                    onChange={(e) => setPagoPor(e.target.value)}
-                    style={input}
-                >
-                    <option value="Jorge">Pagó Jorge</option>
-                    <option value="Sole">Pagó Sole</option>
-                </select>
-
-                <select
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value)}
-                    style={input}
-                >
-                    <option>Efectivo</option>
-                    <option>Transferencia</option>
-                    <option>Tarjeta</option>
-                    <option>Débito</option>
-                    <option>Otro</option>
-                </select>
-
-                <input
-                    type="file"
-                    onChange={(e) => setComprobante(e.target.files[0])}
-                />
-
-                <button style={btnPrimary}>
-                    Agregar gasto
-                </button>
-
-            </form>
-
-            <h3 style={{ marginTop: 30, color: "white" }}>
                 Historial de gastos
             </h3>
 
-            {gastos.map((g) => {
+            {Object.entries(gastosPorMes).map(([mes, items]) => {
 
-                if (editando === g.id) {
-
-                    return (
-
-                        <div key={g.id} style={row}>
-
-                            <div style={rowMobile}>
-
-                                <input
-                                    value={editData.concepto}
-                                    onChange={(e) =>
-                                        setEditData({ ...editData, concepto: e.target.value })
-                                    }
-                                    style={input}
-                                />
-
-                                <input
-                                    type="number"
-                                    value={editData.monto}
-                                    onChange={(e) =>
-                                        setEditData({ ...editData, monto: e.target.value })
-                                    }
-                                    style={input}
-                                />
-
-                                <input
-                                    type="date"
-                                    value={editData.fecha}
-                                    onChange={(e) =>
-                                        setEditData({ ...editData, fecha: e.target.value })
-                                    }
-                                    style={input}
-                                />
-
-                                <select
-                                    value={editData.pagoPor}
-                                    onChange={(e) =>
-                                        setEditData({ ...editData, pagoPor: e.target.value })
-                                    }
-                                    style={input}
-                                >
-                                    <option value="Jorge">Pagó Jorge</option>
-                                    <option value="Sole">Pagó Sole</option>
-                                </select>
-
-                                <select
-                                    value={editData.metodoPago}
-                                    onChange={(e) =>
-                                        setEditData({ ...editData, metodoPago: e.target.value })
-                                    }
-                                    style={input}
-                                >
-                                    <option>Efectivo</option>
-                                    <option>Transferencia</option>
-                                    <option>Tarjeta</option>
-                                    <option>Débito</option>
-                                    <option>Otro</option>
-                                </select>
-
-                                <input
-                                    type="file"
-                                    onChange={(e) => setEditComprobante(e.target.files[0])}
-                                />
-
-                                {editData.comprobanteURL && (
-                                    <a
-                                        href={editData.comprobanteURL}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        style={{ color: "#00c27a" }}
-                                    >
-                                        Ver comprobante actual
-                                    </a>
-                                )}
-
-                                <div style={{ display: "flex", gap: 8 }}>
-
-                                    <button
-                                        style={btnPrimary}
-                                        onClick={guardarEdicion}
-                                    >
-                                        Guardar
-                                    </button>
-
-                                    <button
-                                        style={btnLight}
-                                        onClick={() => {
-                                            setEditando(null);
-                                            setEditComprobante(null);
-                                        }}
-                                    >
-                                        Cancelar
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    );
-                }
+                const abierto = mesAbierto === mes;
 
                 return (
 
-                    <div key={g.id} style={row}>
+                    <div key={mes} style={accordion}>
 
-                        <div style={rowMobile}>
-
-                            <div style={{ fontWeight: 600, color: "white" }}>
-                                {g.concepto}
-                            </div>
-
-                            <div style={{ color: "#bbb" }}>
-                                {g.fecha}
-                            </div>
-
-                            <div style={{ color: "#ddd" }}>
-                                Pagó: {g.pagoPor || "—"}
-                            </div>
-
-                            <div style={{ color: "#ddd" }}>
-                                Método: {g.metodoPago || "—"}
-                            </div>
-
-                            <div style={{ fontWeight: 600, color: "white" }}>
-                                $ {Number(g.monto).toLocaleString("es-AR")}
-                            </div>
-
-                            {g.comprobanteURL && (
-                                <a
-                                    href={g.comprobanteURL}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{ color: "#00c27a" }}
-                                >
-                                    Ver comprobante
-                                </a>
-                            )}
-
-                            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-
-                                <button
-                                    style={btnEdit}
-                                    onClick={() => iniciarEdicion(g)}
-                                >
-                                    Editar
-                                </button>
-
-                                <button
-                                    style={btnDelete}
-                                    onClick={() => eliminarGasto(g.id)}
-                                >
-                                    Eliminar
-                                </button>
-
-                            </div>
-
+                        <div
+                            style={accordionHeader}
+                            onClick={() =>
+                                setMesAbierto(abierto ? null : mes)
+                            }
+                        >
+                            <span>{mes.toUpperCase()}</span>
+                            <span>{items.length} gastos</span>
                         </div>
+
+                        {abierto && (
+
+                            <div>
+
+                                {items.map((g) => (
+
+                                    <div key={g.id} style={row}>
+
+                                        <div style={rowMobile}>
+
+                                            <div style={{ fontWeight: 600, color: "white" }}>
+                                                {g.concepto}
+                                            </div>
+
+                                            <div style={{ color: "#bbb" }}>
+                                                {g.fecha}
+                                            </div>
+
+                                            <div style={{ color: "#ddd" }}>
+                                                Pagó: {g.pagoPor || "—"}
+                                            </div>
+
+                                            <div style={{ color: "#ddd" }}>
+                                                Método: {g.metodoPago || "—"}
+                                            </div>
+
+                                            <div style={{ fontWeight: 600, color: "white" }}>
+                                                $ {Number(g.monto).toLocaleString("es-AR")}
+                                            </div>
+
+                                            {g.comprobanteURL && (
+                                                <a
+                                                    href={g.comprobanteURL}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    style={{ color: "#00c27a" }}
+                                                >
+                                                    Ver comprobante
+                                                </a>
+                                            )}
+
+                                            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+
+                                                <button
+                                                    style={btnEdit}
+                                                    onClick={() => iniciarEdicion(g)}
+                                                >
+                                                    Editar
+                                                </button>
+
+                                                <button
+                                                    style={btnDelete}
+                                                    onClick={() => eliminarGasto(g.id)}
+                                                >
+                                                    Eliminar
+                                                </button>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                ))}
+
+                            </div>
+
+                        )}
 
                     </div>
 
@@ -471,22 +480,41 @@ export default function Costos({ onBack }) {
 function Card({ title, children }) {
 
     return (
-
         <div style={card}>
-
             <div style={{ fontSize: 14, color: "#666" }}>
                 {title}
             </div>
-
             <div style={{ marginTop: 8 }}>
                 {children}
             </div>
-
         </div>
-
     );
 
 }
+
+// --- BLOQUE DE ESTILOS FINAL ---
+
+// --- BLOQUE DE ESTILOS FINAL (CORREGIDO) ---
+
+const labelStyle = {
+    color: "#888",
+    fontSize: "12px",
+    marginBottom: "5px",
+    display: "block",
+    marginLeft: "5px"
+};
+
+const inputStyle = {
+    padding: "12px",
+    borderRadius: "10px",
+    border: "1px solid #444",
+    background: "#2a2a2a",
+    color: "white",
+    fontSize: "16px",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box"
+};
 
 const mensajeExito = {
     background: "#16a34a",
@@ -510,19 +538,6 @@ const card = {
     padding: 16
 };
 
-const form = {
-    display: "flex",
-    gap: 10,
-    marginTop: 10,
-    flexWrap: "wrap"
-};
-
-const input = {
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #ddd"
-};
-
 const row = {
     borderBottom: "1px solid #444",
     padding: 12
@@ -535,34 +550,48 @@ const rowMobile = {
 };
 
 const btnLight = {
-    padding: "8px 12px",
-    borderRadius: 10,
+    padding: "10px 15px",
+    borderRadius: "10px",
     border: "1px solid #ddd",
     background: "white",
-    cursor: "pointer"
-};
-
-const btnPrimary = {
-    padding: "10px 14px",
-    borderRadius: 10,
-    border: 0,
-    background: "#00c27a",
-    color: "white",
-    cursor: "pointer"
+    cursor: "pointer",
+    color: "black",
+    fontWeight: "600"
 };
 
 const btnDelete = {
     background: "#ff4d4f",
     border: 0,
     color: "white",
-    padding: "6px 10px",
-    borderRadius: 8
+    padding: "10px 15px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600"
 };
 
 const btnEdit = {
     background: "#1890ff",
     border: 0,
     color: "white",
-    padding: "6px 10px",
-    borderRadius: 8
+    padding: "10px 15px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600"
+};
+
+const accordion = {
+    marginTop: 10,
+    border: "1px solid #333",
+    borderRadius: 12,
+    overflow: "hidden"
+};
+
+const accordionHeader = {
+    background: "#111",
+    padding: 14,
+    display: "flex",
+    justifyContent: "space-between",
+    cursor: "pointer",
+    color: "#00c27a",
+    fontWeight: 600
 };
