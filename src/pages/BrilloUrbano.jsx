@@ -29,14 +29,38 @@ export default function BrilloUrbanoLanding() {
     };
 
     const certificacionesList = [
-        { nombre: "Normas ISO 9001:2015", link: "/certificaciones/certificado-iso-9001-2015.pdf" },
-        { nombre: "Certificado 9001-2023", link: "/certificaciones/certificados-9001-2023-esp.pdf" },
-        { nombre: "Certificado 45001-2023", link: "/certificaciones/certificados-45001-2023-esp.pdf" },
-        { nombre: "Ficha de Seguridad CMC", link: "/certificaciones/ficha-seguridad-cmc.pdf" },
-        { nombre: "Ficha Técnica Deptal V1.6", link: "/certificaciones/deptal-cmc-v1-6.pdf" },
-        { nombre: "Ficha Técnica HD 585", link: "/certificaciones/ficha-hd-585.pdf" },
-        { nombre: "Habilitación SENASA 2029", link: "/certificaciones/habilitacion-senasa-2029.pdf" },
-        { nombre: "Protocolo PST.01", link: "/certificaciones/protocolo-pst-01.pdf" }
+        {
+            nombre: "Normas ISO 9001:2015",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fcertificado-iso-9001-2015.pdf?alt=media&token=c4564394-d86f-405a-b201-38c6b1615da9"
+        },
+        {
+            nombre: "Certificado 9001-2023",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fcertificados-9001-2023-esp.pdf?alt=media&token=8821a04c-1b0e-4099-bef1-fac9f0c2c49f"
+        },
+        {
+            nombre: "Certificado 45001-2023",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fcertificados-45001-2023-esp.pdf?alt=media&token=ec4738d4-3d0a-4d10-a1da-910384d1ea6b"
+        },
+        {
+            nombre: "Ficha de Seguridad CMC",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fficha-seguridad-cmc.pdf?alt=media&token=ff070a75-26b9-49ef-a2ae-62eac80a96a4"
+        },
+        {
+            nombre: "Ficha Técnica Deptal V1.6",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fdeptal-cmc-v1-6.pdf?alt=media&token=b863bbca-2189-4440-89b8-14f54ac21ac1"
+        },
+        {
+            nombre: "Ficha Técnica HD 585",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fficha-hd-585.pdf?alt=media&token=88847ebe-2619-48bc-a888-3cd30699761d"
+        },
+        {
+            nombre: "Habilitación SENASA 2029",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fhabilitacion-senasa-2029.pdf?alt=media&token=9ac74113-7334-4fe4-96b8-d3d30f49f754"
+        },
+        {
+            nombre: "Protocolo PST.01",
+            link: "https://firebasestorage.googleapis.com/v0/b/brillo-urbano.firebasestorage.app/o/certificaciones%2Fprotocolo-pst-01.pdf?alt=media&token=e2f47499-cdf6-452b-9f5f-0832348cc31d"
+        }
     ];
 
     useEffect(() => {

@@ -1,6 +1,6 @@
 {
     "name": "Panel Brillo Urbano",
-    "short_name": "Gestión Brillo",
+    "short_name": "Gestion Brillo",
     "start_url": "/?admin",
     "display": "standalone",
     "orientation": "portrait",
@@ -8,13 +8,13 @@
     "theme_color": "#00c27a",
     "icons": [
         {
-            "src": "logo-brillo-urbano.png",
+            "src": "/logo-brillo-urbano.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "logo-brillo-urbano.png",
+            "src": "/logo-brillo-urbano.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
